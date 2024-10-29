@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Teacher {
+  id        String      @id @default(uuid())
+  email     String      @unique
+  password  String
+  name      String
+  subjectId String       // Foreign key to Subject
+  subject   Subject     @relation(fields: [subjectId], references: [id])
+  classes   ClassTeacher[] // Link to ClassTeacher join table for classes
+}
+
+model Class {
+  id        String        @id @default(uuid())
+  name      String
+  teachers  ClassTeacher[] // Link to ClassTeacher join table for teachers
+  students  Student[]
+}
+
+model Student {
+  id             String   @id @default(uuid())
+  name           String
+  classId        String
+  class          Class    @relation(fields: [classId], references: [id])
+
+  participation  Int?
+  behavior       Int?
+  workingQuiz    Int?
+  project        Int?
+  finalExam      Int?
+  totalMarks     Int?
+
+  @@map("students")
+}
+
+model Subject {
+  id        String      @id @default(uuid())
+  name      String
+  teachers  Teacher[]   // One subject can have multiple teachers
+}
+
+// Join table for many-to-many relationship between Class and Teacher
+model ClassTeacher {
+  id        String  @id @default(uuid())
+  classId   String
+  teacherId String
+
+  class     Class    @relation(fields: [classId], references: [id])
+  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+
+  @@unique([classId, teacherId]) // Prevent duplicate associations
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+}
