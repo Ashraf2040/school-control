@@ -13,28 +13,58 @@ export async function PUT(request: Request, { params }: { params: { id: string }
   }
 
   try {
-    // Parse JSON body to get updatedData
+    // Parse JSON body to get updated mark data
     const updatedData = await request.json();
 
     // Log to verify incoming data
-    console.log('Updating student with ID:', studentId);
+    console.log('Updating marks for student ID:', studentId);
     console.log('Data:', updatedData);
 
-    // Perform validation to ensure data has expected structure
+    // Validate the incoming data structure
     if (!updatedData || typeof updatedData !== 'object') {
       console.error("Invalid data format:", updatedData);
       return NextResponse.json({ error: 'Invalid data format' }, { status: 400 });
     }
 
-    // Update student by ID, ensuring `studentId` is a string
-    const updatedStudent = await prisma.student.update({
-      where: { id: studentId },
-      data: updatedData,
+    // Ensure that markId is provided in the request data
+    const { markId } = updatedData;
+    if (!markId) {
+      console.error("Missing Mark ID");
+      return NextResponse.json({ error: 'Mark ID is required' }, { status: 400 });
+    }
+
+    // Find the mark by its ID
+    const existingMark = await prisma.mark.findUnique({
+      where: { id: markId },
     });
 
-    return NextResponse.json(updatedStudent);
+    if (!existingMark) {
+      console.error("Mark not found:", markId);
+      return NextResponse.json({ message: 'Mark not found.' }, { status: 404 });
+    }
+
+    // Update the marks
+    const updatedMarks = await prisma.mark.update({
+      where: { id: markId }, // Use the ID of the found marks
+      data: {
+        participation: updatedData.participation,
+        behavior: updatedData.behavior,
+        workingQuiz: updatedData.workingQuiz,
+        project: updatedData.project,
+        finalExam: updatedData.finalExam,
+        totalMarks: (
+          (updatedData.participation || 0) +
+          (updatedData.behavior || 0) +
+          (updatedData.workingQuiz || 0) +
+          (updatedData.project || 0) +
+          (updatedData.finalExam || 0)
+        ), // Calculate total marks
+      },
+    });
+
+    return NextResponse.json(updatedMarks, { status: 200 });
   } catch (error) {
-    console.error('Error updating student:', error);
-    return NextResponse.json({ error: 'Failed to update student' }, { status: 500 });
+    console.error('Error updating marks:', error);
+    return NextResponse.json({ error: 'Failed to update marks' }, { status: 500 });
   }
 }

@@ -1,81 +1,77 @@
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
+import { prisma } from '../src/lib/prisma';
 
 async function main() {
   // Create Subjects
-  const mathSubject = await prisma.subject.create({ data: { name: 'Mathematics' } });
-  const scienceSubject = await prisma.subject.create({ data: { name: 'Science' } });
-  const englishSubject = await prisma.subject.create({ data: { name: 'English' } });
-  const historySubject = await prisma.subject.create({ data: { name: 'History' } });
+  const math = await prisma.subject.create({ data: { name: 'Math' } });
+  const science = await prisma.subject.create({ data: { name: 'Science' } });
 
-  // Check if Admin exists; create if not
-  const adminExists = await prisma.teacher.findUnique({
-    where: { email: 'admin@example.com' },
-  });
-
-  if (!adminExists) {
-    await prisma.teacher.create({
-      data: {
-        email: 'admin@example.com',
-        password: 'securepassword',
-        name: 'Admin User',
-        subject: {
-          create: { name: 'Administration' },
-        },
-      },
-    });
-  }
-
-  // Create Teachers with assigned Subjects
-  const teacherUser1 = await prisma.teacher.create({
+  // Create Teachers
+  const teacher1 = await prisma.teacher.create({
     data: {
-      email: 'ashrafflefl2030@gmail.com',
-      password: 'securepassword',
-      name: 'Ashraf Elsayed',
-      subjectId: scienceSubject.id,
+      email: 'teacher1@example.com',
+      password: 'password123',
+      name: 'Teacher One',
+      subjects: { create: [{ subjectId: math.id }, { subjectId: science.id }] },
     },
   });
 
-  const teacherUser2 = await prisma.teacher.create({
+  const teacher2 = await prisma.teacher.create({
     data: {
-      email: 'ibrahimhassan@gmail.com',
-      password: 'securepassword',
-      name: 'Ibrahim Hassan',
-      subjectId: englishSubject.id,
+      email: 'teacher2@example.com',
+      password: 'password456',
+      name: 'Teacher Two',
+      subjects: { create: [{ subjectId: science.id }] },
     },
   });
 
-  // Create Classes
-  const class1 = await prisma.class.create({ data: { name: '4C' } });
-  const class2 = await prisma.class.create({ data: { name: '5A' } });
+  // Create Classes and assign to teachers
+  const class1 = await prisma.class.create({ data: { name: 'Class 1' } });
+  const class2 = await prisma.class.create({ data: { name: 'Class 2' } });
 
-  // Link Teachers to Classes using ClassTeacher join table
-  await prisma.classTeacher.createMany({
-    data: [
-      { classId: class1.id, teacherId: teacherUser1.id },
-      { classId: class1.id, teacherId: teacherUser2.id },
-      { classId: class2.id, teacherId: teacherUser2.id },
-    ],
+  await prisma.classTeacher.create({
+    data: {
+      teacherId: teacher1.id,
+      classId: class1.id,
+    },
   });
 
-  // Seed Students in each Class
-  await prisma.student.createMany({
-    data: [
-      { name: 'Mohammed Hassan', classId: class1.id },
-      { name: 'Ahmed Samy', classId: class1.id },
-      { name: 'Ibrahim Salem', classId: class2.id },
-    ],
+  await prisma.classTeacher.create({
+    data: {
+      teacherId: teacher2.id,
+      classId: class2.id,
+    },
   });
 
-  console.log('Seeding completed!');
+  // Add students to classes
+  const student1 = await prisma.student.create({
+    data: {
+      name: 'Student One',
+      classId: class1.id,
+    },
+  });
+
+  const student2 = await prisma.student.create({
+    data: {
+      name: 'Student Two',
+      classId: class2.id,
+    },
+  });
+
+  // Add marks for students in specific class-teacher association
+  await prisma.mark.create({
+    data: {
+      participation: 8,
+      behavior: 9,
+      workingQuiz: 7,
+      project: 10,
+      finalExam: 9,
+      totalMarks: 43,
+      studentId: student1.id,
+      classTeacherId: (await prisma.classTeacher.findFirst({ where: { teacherId: teacher1.id, classId: class1.id } }))!.id,
+    },
+  });
 }
 
 main()
-  .catch((e) => {
-    console.error(e);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch(e => console.error(e))
+  .finally(async () => await prisma.$disconnect());

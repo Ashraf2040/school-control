@@ -8,54 +8,94 @@ datasource db {
 }
 
 model Teacher {
-  id        String      @id @default(uuid())
-  email     String      @unique
+  id        String          @id @default(uuid())
+  email     String          @unique
   password  String
   name      String
-  subjectId String       // Foreign key to Subject
-  subject   Subject     @relation(fields: [subjectId], references: [id])
-  classes   ClassTeacher[] // Link to ClassTeacher join table for classes
+  subjects  SubjectTeacher[]  // Link to SubjectTeacher join table for subjects
+  classes   ClassTeacher[]  // Link to ClassTeacher join table for classes
 }
 
 model Class {
-  id        String        @id @default(uuid())
+  id        String          @id @default(uuid())
   name      String
-  teachers  ClassTeacher[] // Link to ClassTeacher join table for teachers
+  teachers  ClassTeacher[]  // Link to ClassTeacher join table for teachers
   students  Student[]
+  subjects  ClassSubject[]  // Link to ClassSubject join table for subjects
 }
 
 model Student {
-  id             String   @id @default(uuid())
-  name           String
-  classId        String
-  class          Class    @relation(fields: [classId], references: [id])
-
-  participation  Int?
-  behavior       Int?
-  workingQuiz    Int?
-  project        Int?
-  finalExam      Int?
-  totalMarks     Int?
+  id           String     @id @default(uuid())
+  name         String
+  classId      String
+  class        Class      @relation(fields: [classId], references: [id])
+  marks        Mark[]     // Link to marks for different subjects and categories
 
   @@map("students")
 }
 
 model Subject {
-  id        String      @id @default(uuid())
-  name      String
-  teachers  Teacher[]   // One subject can have multiple teachers
+  id          String          @id @default(uuid())
+  name        String
+  teachers    SubjectTeacher[]  // Link to SubjectTeacher join table for teachers
+  classes     ClassSubject[]  // Link to ClassSubject join table for classes
 }
 
 // Join table for many-to-many relationship between Class and Teacher
 model ClassTeacher {
-  id        String  @id @default(uuid())
+  id        String    @id @default(uuid())
   classId   String
   teacherId String
 
-  class     Class    @relation(fields: [classId], references: [id])
-  teacher   Teacher  @relation(fields: [teacherId], references: [id])
+  class     Class     @relation(fields: [classId], references: [id])
+  teacher   Teacher   @relation(fields: [teacherId], references: [id])
+
+  marks     Mark[]    // Link to marks associated with this specific class-teacher assignment
 
   @@unique([classId, teacherId]) // Prevent duplicate associations
+}
+
+// Join table for many-to-many relationship between Class and Subject
+model ClassSubject {
+  id        String   @id @default(uuid())
+  classId   String
+  subjectId String
+
+  class     Class    @relation(fields: [classId], references: [id])
+  subject   Subject  @relation(fields: [subjectId], references: [id])
+
+  @@unique([classId, subjectId]) // Prevent duplicate associations
+}
+
+// Join table for many-to-many relationship between Teacher and Subject
+model SubjectTeacher {
+  id          String   @id @default(uuid())
+  subjectId   String
+  teacherId   String
+
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  teacher     Teacher  @relation(fields: [teacherId], references: [id])
+
+  @@unique([subjectId, teacherId]) // Prevent duplicate associations
+}
+
+// Model for storing marks for each student in each subject within a class
+model Mark {
+  id              String     @id @default(uuid())
+  participation   Int?
+  behavior        Int?
+  workingQuiz     Int?
+  project         Int?
+  finalExam       Int?
+  totalMarks      Int?
+
+  studentId       String
+  student         Student    @relation(fields: [studentId], references: [id])
+
+  classTeacherId  String
+  classTeacher    ClassTeacher @relation(fields: [classTeacherId], references: [id])
+
+  @@map("marks")
 }
 
 enum Role {

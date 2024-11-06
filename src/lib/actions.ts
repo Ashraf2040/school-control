@@ -1,12 +1,12 @@
 import { prisma } from './prisma';
-import { Student } from '@prisma/client';
+import { Student, Mark } from '@prisma/client';
 
-// Fetch all teachers
+// Fetch all teachers with subjects and classes
 export async function getAllTeachers() {
   return await prisma.teacher.findMany({
     include: {
-      classes: { include: { class: true } }, // Use join table for teacher-class association
-      subject: true,
+      subjects: { include: { subject: true } }, // Access subjects via SubjectTeacher join table
+      classes: { include: { class: true } },
     },
   });
 }
@@ -18,8 +18,9 @@ export async function getAllSubjects() {
 
 // Fetch teachers by subject
 export async function getTeachersBySubject(subjectId: string) {
-  return await prisma.teacher.findMany({
+  return await prisma.subjectTeacher.findMany({
     where: { subjectId },
+    include: { teacher: true },
   });
 }
 
@@ -33,31 +34,44 @@ export async function getClassesByTeacher(teacherId: string) {
   });
 }
 
-// Fetch students by class
-export async function getStudentsByClass(classId: string) {
+// Fetch students by class with marks for each subject within the class
+export async function getStudentsByClass(classId: string, teacherId: string) {
   return await prisma.student.findMany({
     where: { classId },
-    select: {
-      id: true,
-      name: true,
-      participation: true,
-      behavior: true,
-      workingQuiz: true,
-      project: true,
-      finalExam: true,
-      totalMarks: true,
+    include: {
+      marks: {
+        where: {
+          classTeacher: {
+            teacherId: teacherId,
+            classId: classId,
+          },
+        },
+        select: {
+          id: true,
+          participation: true,
+          behavior: true,
+          workingQuiz: true,
+          project: true,
+          finalExam: true,
+          totalMarks: true,
+        },
+      },
     },
   });
 }
 
-// Create a new teacher
-export async function createTeacher(email: string, password: string, name: string, subjectId: string) {
+
+
+// Create a new teacher and associate with a subject
+export async function createTeacher(email: string, password: string, name: string, subjectIds: string[]) {
   return await prisma.teacher.create({
     data: {
       email,
-      password, // Ensure password hashing in real applications
+      password,
       name,
-      subjectId,
+      subjects: {
+        create: subjectIds.map(subjectId => ({ subjectId })),
+      },
     },
   });
 }
@@ -128,9 +142,9 @@ export async function updateClass(classId: string, newName: string) {
 }
 
 // Update student marks
-export async function updateStudentMarks(studentId: string, updatedData: Partial<Student>) {
-  return await prisma.student.update({
-    where: { id: studentId },
+export async function updateStudentMarks(studentId: string, updatedData: Partial<Mark>) {
+  return await prisma.mark.updateMany({
+    where: { studentId },
     data: updatedData,
   });
 }

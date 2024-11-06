@@ -2,24 +2,31 @@
 import { useEffect, useState } from 'react';
 import { useUser } from '@clerk/nextjs';
 import { Class, Student, Teacher } from '@prisma/client';
+import toast, { Toaster } from 'react-hot-toast';
 
-interface Marks {
+interface Mark {
+  id: string;
   participation?: number;
   behavior?: number;
   workingQuiz?: number;
   project?: number;
   finalExam?: number;
+  totalMarks?: number;
+}
+
+interface StudentWithMarks extends Student {
+  marks: Mark[];
+  markId: string;
 }
 
 const TeacherPage: React.FC = () => {
   const { user } = useUser();
   const [classes, setClasses] = useState<Class[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
-  const [selectedClassId, setSelectedClassId] = useState<string>(''); // Selected class
-  const [marks, setMarks] = useState<Record<number, Marks>>({}); // Store marks for each student
+  const [students, setStudents] = useState<StudentWithMarks[]>([]);
+  const [selectedClassId, setSelectedClassId] = useState<string>('');
+  const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [teachers, setTeachers] = useState<Teacher[]>([]);
 
-  // Fetch classes for the logged-in teacher
   useEffect(() => {
     const fetchClasses = async () => {
       if (!user) return;
@@ -31,70 +38,69 @@ const TeacherPage: React.FC = () => {
         setClasses(data);
       } catch (error) {
         console.error(error);
+        toast.error('Error fetching classes.');
       }
     };
 
     fetchClasses();
   }, [user]);
 
-  // Fetch teachers
   useEffect(() => {
     const fetchTeachers = async () => {
-      if (!user) return; 
-
       try {
         const response = await fetch(`/api/teachers`);
         if (!response.ok) throw new Error('Failed to fetch teachers');
-
         const data: Teacher[] = await response.json();
         setTeachers(data);
       } catch (error) {
         console.error(error);
+        toast.error('Error fetching teachers.');
       }
     };
 
     fetchTeachers();
-  }, [user]);
+  }, []);
 
-  const currentTeacher = teachers.filter((teacher) => teacher?.id === user?.id);
+  const currentTeacher = teachers.find((teacher) => teacher.id === user?.id);
 
-  // Fetch students based on the selected class
   useEffect(() => {
     const fetchStudents = async () => {
       if (!selectedClassId) return;
+
       try {
-        const response = await fetch(`/api/students?classId=${selectedClassId}`);
+        const response = await fetch(`/api/students?classId=${selectedClassId}&teacherId=${user?.id}`);
         if (!response.ok) throw new Error('Failed to fetch students');
-        const data: Student[] = await response.json();
+
+        const data: StudentWithMarks[] = await response.json();
         setStudents(data);
 
-        const initialMarks: Record<number, Marks> = data.reduce((acc: Record<number, Marks>, student) => {
-          acc[+student.id] = {
-            participation: student.participation || 0,
-            behavior: student.behavior || 0,
-            workingQuiz: student.workingQuiz || 0,
-            project: student.project || 0,
-            finalExam: student.finalExam || 0,
+        const initialMarks: Record<string, Mark> = {};
+        data.forEach((student) => {
+          const studentMark = student.marks[0] || {};
+          initialMarks[student.id] = {
+            id: studentMark.id,
+            participation: studentMark.participation || 0,
+            behavior: studentMark.behavior || 0,
+            workingQuiz: studentMark.workingQuiz || 0,
+            project: studentMark.project || 0,
+            finalExam: studentMark.finalExam || 0,
           };
-          return acc;
-        }, {});
-
-        setMarks(initialMarks); 
+        });
+        setMarks(initialMarks);
       } catch (error) {
         console.error(error);
+        toast.error('Error fetching students.');
       }
     };
 
     fetchStudents();
   }, [selectedClassId]);
 
-  // Handle class selection change
   const handleClassChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     setSelectedClassId(event.target.value);
   };
 
-  // Handle changes to marks for individual students
-  const handleMarkChange = (studentId: number, field: keyof Marks, value: string) => {
+  const handleMarkChange = (studentId: string, field: keyof Mark, value: string) => {
     setMarks((prevMarks) => ({
       ...prevMarks,
       [studentId]: {
@@ -104,72 +110,76 @@ const TeacherPage: React.FC = () => {
     }));
   };
 
-  // Calculate total marks for a student
-  const calculateTotalMarks = (studentId: number) => {
+  const calculateTotalMarks = (studentId: string): number => {
     const studentMarks = marks[studentId] || {};
-    return Object.values(studentMarks).reduce((total, mark) => total + (mark || 0), 0);
+    return (
+      (studentMarks.participation || 0) +
+      (studentMarks.behavior || 0) +
+      (studentMarks.workingQuiz || 0) +
+      (studentMarks.project || 0) +
+      (studentMarks.finalExam || 0)
+    );
   };
 
-  // Save the updated marks to the database
   const handleSaveMarks = async () => {
     try {
       const responses = await Promise.all(
-        Object.entries(marks).map(([studentId, studentMarks]) =>
-          fetch(`/api/students/${studentId}`, {
+        students.map((student) => {
+          const studentMarks = marks[student.id];
+
+          return fetch(`/api/students/${student.id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(studentMarks),
-          })
-        )
+            body: JSON.stringify({
+              markId: student.marks[0].id,
+              participation: studentMarks.participation,
+              behavior: studentMarks.behavior,
+              workingQuiz: studentMarks.workingQuiz,
+              project: studentMarks.project,
+              finalExam: studentMarks.finalExam,
+            }),
+          });
+        })
       );
 
       if (responses.some((response) => !response.ok)) {
         throw new Error('Failed to update marks');
       }
 
-      alert('Marks updated successfully!');
+      toast.success('Marks updated successfully!');
     } catch (error) {
       console.error(error);
-      alert('Error updating marks. Please try again.');
+      toast.error('Error updating marks. Please try again.');
     }
   };
 
-  // Fill all marks for a specific field
-  const fillAllMarks = (field: keyof Marks) => {
-    const fillValue = prompt(`Enter value to fill all ${field} marks:`); // Get value from the user
-    if (fillValue !== null) {
-      const fillNumber = Number(fillValue);
-      if (!isNaN(fillNumber)) {
-        setMarks((prevMarks) => {
-          const updatedMarks = { ...prevMarks };
-          students.forEach((student) => {
-            updatedMarks[+student.id] = {
-              ...updatedMarks[+student.id],
-              [field]: fillNumber,
-            };
-          });
-          return updatedMarks;
-        });
-      } else {
-        alert('Invalid number entered. Please try again.');
-      }
-    }
+  const fillAllMarks = (field: keyof Mark, value: number) => {
+    setMarks((prevMarks) => {
+      const updatedMarks = { ...prevMarks };
+      students.forEach((student) => {
+        updatedMarks[student.id] = {
+          ...updatedMarks[student.id],
+          [field]: value,
+        };
+      });
+      return updatedMarks;
+    });
   };
 
   return (
-    <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Hello : {currentTeacher[0]?.name}</h1>
+    <div className="mx-auto p-6  min-h-screen">
+      <Toaster position="top-right" />
+      <h1 className="text-2xl font-bold text-white bg-[#3a4750] p-3 rounded-xl mb-6 max-w-fit text-center">Hello, {currentTeacher?.name}</h1>
 
-      {/* Class selection */}
-      <div className="mb-4">
-        <label htmlFor="classSelect" className="block text-lg font-medium mb-2">
+      <div className="mb-6">
+        <label htmlFor="classSelect" className="block my-2 text-xl font-medium text-lamaPurple ">
           Select Class
         </label>
         <select
           id="classSelect"
           value={selectedClassId}
           onChange={handleClassChange}
-          className="border border-gray-300 p-2 rounded"
+          className="border border-lamaSky p-2 rounded w-full text-lg max-w-fit"
         >
           <option value="">-- Select a Class --</option>
           {classes.map((classItem) => (
@@ -180,125 +190,49 @@ const TeacherPage: React.FC = () => {
         </select>
       </div>
 
-      {/* Student table */}
       {students.length > 0 && (
         <div>
-          <h2 className="text-xl mb-2">Students in Class</h2>
-          <table className="min-w-full border border-gray-300">
-            <thead>
+          <h2 className="text-2xl text-lamaPurple font-semibold mb-4">Students in Class</h2>
+          <table className="min-w-full bg-white shadow-lg rounded-lg overflow-hidden border border-lamaYellowLight">
+            <thead className="bg-gray-200">
               <tr>
-                <th className="border border-gray-300">NO</th>
-                <th className="border border-gray-300">Name</th>
-
-                {/* Marks Columns */}
-                <th className="border border-gray-300">
-                  Participation
-                  <button
-                    onClick={() => fillAllMarks('participation')}
-                    className="ml-2 text-sm text-blue-500"
-                  >
-                    Fill All
-                  </button>
-                </th>
-                <th className="border border-gray-300">
-                  Behavior
-                  <button
-                    onClick={() => fillAllMarks('behavior')}
-                    className="ml-2 text-sm text-blue-500"
-                  >
-                    Fill All
-                  </button>
-                </th>
-                <th className="border border-gray-300">
-                  Working Quiz
-                  <button
-                    onClick={() => fillAllMarks('workingQuiz')}
-                    className="ml-2 text-sm text-blue-500"
-                  >
-                    Fill All
-                  </button>
-                </th>
-                <th className="border border-gray-300">
-                  Project
-                  <button
-                    onClick={() => fillAllMarks('project')}
-                    className="ml-2 text-sm text-blue-500"
-                  >
-                    Fill All
-                  </button>
-                </th>
-                <th className="border border-gray-300">
-                  Final Exam
-                  <button
-                    onClick={() => fillAllMarks('finalExam')}
-                    className="ml-2 text-sm text-blue-500"
-                  >
-                    Fill All
-                  </button>
-                </th>
-                
-                {/* Total Marks Column */}
-                <th className="border border-gray-300">Total Marks</th>
+                <th className="p-3 text-center text-black">NO</th>
+                <th className="p-3 text-center text-black">Name</th>
+                {['participation', 'behavior', 'workingQuiz', 'project', 'finalExam'].map((field) => (
+                  <th key={field} className="p-3 text-left text-black">
+                    {field.charAt(0).toUpperCase() + field.slice(1)}
+                    <select
+                      onChange={(e) => fillAllMarks(field as keyof Mark, Number(e.target.value))}
+                      className="ml-2 border border-gray-300 p-1 rounded"
+                    >
+                      <option value="">fill</option>
+                      {[5, 10, 15, 20, 35].map((value) => (
+                        <option key={value} value={value}>
+                          {value}
+                        </option>
+                      ))}
+                    </select>
+                  </th>
+                ))}
+                <th className="p-3 text-left text-black">Total</th>
               </tr>
             </thead>
             <tbody>
               {students.map((student, index) => (
-                <tr key={student.id}>
-                  <td className="border border-gray-300">{index + 1}</td>
-                  <td className="border border-gray-300">{student.name}</td>
-
-                  {/* Participation */}
-                  <td className="border border-gray-300">
-                    <input
-                      type="number"
-                      value={marks[+student.id]?.participation || ''}
-                      onChange={(e) => handleMarkChange(+student.id, 'participation', e.target.value)}
-                      className="border border-gray-300 p-1 rounded w-full"
-                    />
-                  </td>
-
-                  {/* Behavior */}
-                  <td className="border border-gray-300">
-                    <input
-                      type="number"
-                      value={marks[+student.id]?.behavior || ''}
-                      onChange={(e) => handleMarkChange(+student.id, 'behavior', e.target.value)}
-                      className="border border-gray-300 p-1 rounded w-full"
-                    />
-                  </td>
-
-                  {/* Working Quiz */}
-                  <td className="border border-gray-300">
-                    <input
-                      type="number"
-                      value={marks[+student.id]?.workingQuiz || ''}
-                      onChange={(e) => handleMarkChange(+student.id, 'workingQuiz', e.target.value)}
-                      className="border border-gray-300 p-1 rounded w-full"
-                    />
-                  </td>
-
-                  {/* Project */}
-                  <td className="border border-gray-300">
-                    <input
-                      type="number"
-                      value={marks[+student.id]?.project || ''}
-                      onChange={(e) => handleMarkChange(+student.id, 'project', e.target.value)}
-                      className="border border-gray-300 p-1 rounded w-full"
-                    />
-                  </td>
-
-                  {/* Final Exam */}
-                  <td className="border border-gray-300">
-                    <input
-                      type="number"
-                      value={marks[+student.id]?.finalExam || ''}
-                      onChange={(e) => handleMarkChange(+student.id, 'finalExam', e.target.value)}
-                      className="border border-gray-300 p-1 rounded w-full"
-                    />
-                  </td>
-
-                  {/* Total Marks */}
-                  <td className="border border-gray-300">{calculateTotalMarks(+student.id)}</td>
+                <tr key={student.id} className="even:bg-gray-200 odd:bg-gray-100">
+                  <td className="px-3"><span className='font-bold'>{index + 1}</span></td>
+                  <td className=" text-[14px] font-bold">{student.name}</td>
+                  {['participation', 'behavior', 'workingQuiz', 'project', 'finalExam'].map((field) => (
+                    <td key={field} className="p-1">
+                      <input
+                        type="number"
+                        value={marks[student.id]?.[field as keyof Mark] || ''}
+                        onChange={(e) => handleMarkChange(student.id, field as keyof Mark, e.target.value)}
+                        className="w-full border border-gray-300 p-2 rounded"
+                      />
+                    </td>
+                  ))}
+                  <td className="p-3 text-center font-bold text-lamaPurple">{calculateTotalMarks(student.id)}</td>
                 </tr>
               ))}
             </tbody>
@@ -306,7 +240,7 @@ const TeacherPage: React.FC = () => {
 
           <button
             onClick={handleSaveMarks}
-            className="mt-4 bg-blue-500 text-white px-4 py-2 rounded"
+            className="mt-6 bg-[#3a4750] hover:bg-lamaYellow text-white font-bold py-2 px-6 rounded shadow-lg"
           >
             Save Marks
           </button>
