@@ -118,7 +118,15 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
   const handlePrintCertificate = () => {
     window.print();
   };
-
+  const calculateGrade = (totalMarks: number) => {
+    if (totalMarks >= 96) return "A+";
+    if (totalMarks >= 93) return "A";
+    if (totalMarks >= 89) return "A-";
+    if (totalMarks >= 86) return "B+";
+    if (totalMarks >= 83) return "B";
+    if (totalMarks >= 79) return "B-";
+    return "Below B-";
+  };
   return (
     <div className="w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
       <h1 className="text-3xl font-semibold mb-6 flex justify-center items-center  print:hidden "><span className='text-white max-w-fit bg-[#3a4750] text-center rounded-lg p-3'>Admin Dashboard</span></h1>

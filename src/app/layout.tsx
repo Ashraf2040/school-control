@@ -14,7 +14,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <div className='    text-end items-center'>
               <SignedOut>
                 <SignInButton >
-                  <button className="  right-0 bg-[#3a4750] text-white py-2 px-4 rounded text-xl">Sign In</button>
+                  <button className="  right-0 font-semibold text-[#3a4750] bg-white py-2 px-4 rounded text-xl">Sign In</button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>

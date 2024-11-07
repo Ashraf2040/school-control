@@ -148,3 +148,18 @@ export async function updateStudentMarks(studentId: string, updatedData: Partial
     data: updatedData,
   });
 }
+
+
+export async function getStudentWithMarks(studentId: string) {
+  return prisma.student.findUnique({
+    where: { id: studentId },
+    include: {
+      class: true,
+      marks: {
+        include: {
+          subject: true,
+        },
+      },
+    },
+  });
+}
