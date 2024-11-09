@@ -27,6 +27,14 @@ const TeacherPage: React.FC = () => {
   const [marks, setMarks] = useState<Record<string, Mark>>({});
   const [teachers, setTeachers] = useState<Teacher[]>([]);
 
+  const maxValues = {
+    participation: 15,
+    behavior: 15,
+    workingQuiz: 15,
+    project: 20,
+    finalExam: 35,
+  };
+
   useEffect(() => {
     const fetchClasses = async () => {
       if (!user) return;
@@ -153,13 +161,14 @@ const TeacherPage: React.FC = () => {
     }
   };
 
-  const fillAllMarks = (field: keyof Mark, value: number) => {
+  const fillAllMarks = (field: keyof Mark) => {
+    const maxValue = maxValues[field];
     setMarks((prevMarks) => {
       const updatedMarks = { ...prevMarks };
       students.forEach((student) => {
         updatedMarks[student.id] = {
           ...updatedMarks[student.id],
-          [field]: value,
+          [field]: maxValue,
         };
       });
       return updatedMarks;
@@ -167,12 +176,14 @@ const TeacherPage: React.FC = () => {
   };
 
   return (
-    <div className="mx-auto p-6  min-h-screen">
+    <div className="mx-auto p-6 min-h-screen">
       <Toaster position="top-right" />
-      <h1 className="text-2xl font-bold text-white bg-[#3a4750] p-3 rounded-xl mb-6 max-w-fit text-center">Hello, {currentTeacher?.name}</h1>
+      <h1 className="text-2xl font-bold text-white bg-[#0e2e3b] p-3 rounded-xl mb-6 max-w-fit text-center">
+        Hello, {currentTeacher?.name}
+      </h1>
 
       <div className="mb-6">
-        <label htmlFor="classSelect" className="block my-2 text-xl font-medium text-lamaPurple ">
+        <label htmlFor="classSelect" className="block my-2 text-xl font-medium text-lamaPurple">
           Select Class
         </label>
         <select
@@ -199,29 +210,26 @@ const TeacherPage: React.FC = () => {
                 <th className="p-3 text-center text-black">NO</th>
                 <th className="p-3 text-center text-black">Name</th>
                 {['participation', 'behavior', 'workingQuiz', 'project', 'finalExam'].map((field) => (
-                  <th key={field} className="p-3 text-left text-black">
+                  <th key={field} className="p-3 text-center text-black">
                     {field.charAt(0).toUpperCase() + field.slice(1)}
-                    <select
-                      onChange={(e) => fillAllMarks(field as keyof Mark, Number(e.target.value))}
-                      className="ml-2 border border-gray-300 p-1 rounded"
+                    <button
+                      onClick={() => fillAllMarks(field as keyof Mark)}
+                      className="ml-2 bg-[#0e2e3b] hover:bg-gray-400 text-xs font-bold py-1 px-2 rounded text-white"
                     >
-                      <option value="">fill</option>
-                      {[5, 10, 15, 20, 35].map((value) => (
-                        <option key={value} value={value}>
-                          {value}
-                        </option>
-                      ))}
-                    </select>
+                      Fill
+                    </button>
                   </th>
                 ))}
-                <th className="p-3 text-left text-black">Total</th>
+                <th className="p-3 text-center text-black">Total</th>
               </tr>
             </thead>
             <tbody>
               {students.map((student, index) => (
                 <tr key={student.id} className="even:bg-gray-200 odd:bg-gray-100">
-                  <td className="px-3"><span className='font-bold'>{index + 1}</span></td>
-                  <td className=" text-[14px] font-bold">{student.name}</td>
+                  <td className="px-3">
+                    <span className="font-bold">{index + 1}</span>
+                  </td>
+                  <td className="text-[14px] font-bold">{student.name}</td>
                   {['participation', 'behavior', 'workingQuiz', 'project', 'finalExam'].map((field) => (
                     <td key={field} className="p-1">
                       <input
@@ -232,7 +240,9 @@ const TeacherPage: React.FC = () => {
                       />
                     </td>
                   ))}
-                  <td className="p-3 text-center font-bold text-lamaPurple">{calculateTotalMarks(student.id)}</td>
+                  <td className="p-3 text-center font-bold text-lamaPurple">
+                    {calculateTotalMarks(student.id)}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -240,7 +250,7 @@ const TeacherPage: React.FC = () => {
 
           <button
             onClick={handleSaveMarks}
-            className="mt-6 bg-[#3a4750] hover:bg-lamaYellow text-white font-bold py-2 px-6 rounded shadow-lg"
+            className="mt-6 bg-[#0e2e3b] hover:bg-lamaYellow text-white font-bold py-2 px-6 rounded shadow-lg"
           >
             Save Marks
           </button>

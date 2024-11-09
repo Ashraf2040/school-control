@@ -28,9 +28,14 @@ model Class {
 model Student {
   id      String @id @default(uuid())
   name    String
+  arabicName String?
   classId String
   class   Class  @relation(fields: [classId], references: [id])
   marks   Mark[] // Marks per subject/teacher combination
+  nationality      String?   // Optional field for nationality
+  dateOfBirth      DateTime? // Optional field for date of birth
+  iqamaNo  String?   // Optional field for ID/Iqama Number
+  passportNo   String?   // Optional field for passport number
 }
 
 model Subject {

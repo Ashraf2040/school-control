@@ -7,7 +7,9 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const classId = searchParams.get('classId');
   const teacherId = searchParams.get('teacherId');
-  const role = searchParams.get('role'); // new parameter to identify admin vs. teacher request
+  const role = searchParams.get('role');
+  const subjectId = searchParams.get('subjectId');
+   // new parameter to identify admin vs. teacher request
 
   if (!classId || !teacherId) {
     return new Response('Missing classId or teacherId', { status: 400 });
@@ -22,6 +24,7 @@ export async function GET(request: Request) {
             classTeacher: {
               teacherId: role === 'admin' ? undefined : teacherId, // filter based on teacherId only if not admin
             },
+       
           },
         },
       },
@@ -29,8 +32,10 @@ export async function GET(request: Request) {
         marks: {
           where: {
             classTeacher: {
-              teacherId: role === 'admin' ? undefined : teacherId, // include marks by teacher for teacher requests
+              teacherId: role === 'admin' ? undefined : teacherId,
+               // include marks by teacher for teacher requests
             },
+           
           },
         },
       },

@@ -2,18 +2,36 @@ import React from 'react'
 
 const Hero = () => {
   return (
-    <div className="container mx-auto flex px-5 py-24 md:flex-row flex-col items-center">
-    <div
-        className="lg:flex-grow md:w-1/2 lg:pr-24 md:pr-16 flex flex-col md:items-start md:text-left mb-16 md:mb-0 items-center text-center">
-        <h1 className="title-font sm:text-4xl text-3xl mb-4 font-medium text-gray-900">Welcome to The School Management System
-        </h1>
-        
-        
+
+
+<section className=" w-full">
+  <div className="mx-auto max-w-screen-xl px-4 py-32 lg:flex lg:h-screen lg:items-center">
+    <div className="mx-auto max-w-3xl text-center ">
+      <h1 className="text-3xl font-extrabold sm:text-5xl text-black min-w-fit ">
+        School Management System.
+        <strong className="font-extrabold text-red-700 sm:block"> Alforqan Private School. </strong>
+      </h1>
+
+  
+
+      <div className="mt-8 flex flex-wrap justify-center gap-4">
+        <a
+          className="block w-full rounded bg-red-600 px-12 py-3 text-sm font-medium text-white shadow hover:bg-red-700 focus:outline-none focus:ring active:bg-red-500 sm:w-auto"
+          href="#"
+        >
+          Get Started
+        </a>
+
+        <a
+          className="block w-full rounded px-12 py-3 text-sm font-medium text-red-600 shadow hover:text-red-700 focus:outline-none focus:ring active:text-red-500 sm:w-auto"
+          href="#"
+        >
+          Learn More
+        </a>
+      </div>
     </div>
-    <div className="lg:max-w-lg lg:w-full md:w-1/2 w-5/6">
-        <img className="object-cover object-center rounded" alt="hero" src="https://www.svgrepo.com/show/358718/logo-windows.svg" />
-    </div>
-</div>
+  </div>
+</section>
   )
 }
 

@@ -1,8 +1,9 @@
 'use client';
 
-import { useRef, useState,useEffect } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { Class, Student, Subject } from '@prisma/client';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface AdminUIProps {
   subjects: Subject[];
@@ -13,6 +14,7 @@ interface Teacher {
   email: string;
   name: string;
 }
+
 interface LocalStudent {
   name: string;
   id: string;
@@ -23,6 +25,7 @@ interface LocalStudent {
   project?: number;
   finalExam?: number;
 }
+
 const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
@@ -32,6 +35,8 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
   const [students, setStudents] = useState<Student[]>([]);
   const [selectedTeacherEmail, setSelectedTeacherEmail] = useState<string | null>(null);
   const [selectedClassName, setSelectedClassName] = useState<string | null>(null);
+
+  const router = useRouter();
 
   const fetchTeachersBySubject = async (subjectId: string) => {
     const res = await fetch(`/api/teachers?subjectId=${subjectId}`);
@@ -47,16 +52,19 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
     console.log(data)
     return data;
   };
+
   useEffect(() => {
     const fetchStudents = async () => {
-      if (!selectedClassId || !selectedTeacherId) return;
-  
+      if (!selectedClassId || !selectedTeacherId || !selectedSubjectId) return;
+
       try {
-        const response = await fetch(`/api/students?classId=${selectedClassId}&teacherId=${selectedTeacherId}&role=admin`);
+        const response = await fetch(
+          `/api/students?classId=${selectedClassId}&teacherId=${selectedTeacherId}&role=admin&subjectId=${selectedSubjectId}`
+        );
         if (!response.ok) throw new Error('Failed to fetch students');
-  
+
         const data = await response.json();
-  
+
         const mappedStudents = data.map((student: any) => ({
           ...student,
           behavior: student.marks?.behavior || 0,
@@ -65,17 +73,19 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
           project: student.marks?.project || 0,
           finalExam: student.marks?.finalExam || 0,
         }));
-  
+
         setStudents(mappedStudents);
+        console.log(mappedStudents);
       } catch (error) {
         console.error(error);
       }
     };
-  
+
     fetchStudents();
-  }, [selectedClassId, selectedTeacherId]);
+  }, [selectedClassId, selectedTeacherId, selectedSubjectId]);
+
   
- console.log(students)
+
   const handleSubjectChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const subjectId = e.target.value;
     setSelectedSubjectId(subjectId);
@@ -93,7 +103,7 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
 
     const selectedTeacher = teachers.find((teacher) => teacher.id === teacherId);
     if (selectedTeacher) {
-      setSelectedTeacherEmail(selectedTeacher.email);
+      setSelectedTeacherEmail(selectedTeacher.name);
     }
 
     const classesData = await fetchClasses(teacherId);
@@ -109,38 +119,42 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
 
     const selectedClass = classes.find((classItem) => classItem.id === classId);
     if (selectedClass) {
-      setSelectedClassName(selectedClass.name);
+      setSelectedClassName(selectedClass.class.name);
     }
-
-  
   };
 
   const handlePrintCertificate = () => {
     window.print();
   };
-  const calculateGrade = (totalMarks: number) => {
-    if (totalMarks >= 96) return "A+";
-    if (totalMarks >= 93) return "A";
-    if (totalMarks >= 89) return "A-";
-    if (totalMarks >= 86) return "B+";
-    if (totalMarks >= 83) return "B";
-    if (totalMarks >= 79) return "B-";
-    return "Below B-";
-  };
+
+
+
   return (
     <div className="w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <h1 className="text-3xl font-semibold mb-6 flex justify-center items-center  print:hidden "><span className='text-white max-w-fit bg-[#3a4750] text-center rounded-lg p-3'>Admin Dashboard</span></h1>
+      <div className='flex justify-between items-center mb-3 flex-wrap print:hidden'>
+      <h1  className="text-white max-w-fit bg-main text-center rounded px-4 py-2 font-semibold">Admin Dashboard
+      </h1>
+      <button
+        className="font-semibold py-2 px-4 bg-main rounded text-white"
+        onClick={() => router.push('/teacherCreation')}
+      >
+        Create New Teacher
+      </button>
+     
+      </div>
 
       <div className="mb-6 print:hidden">
         <h2 className="text-xl font-semibold mb-2 print:hidden">Select a Subject</h2>
         <select
-          className="border rounded p-3 w-full focus:outline-none focus:ring-2 focus:ring-blue-400"
+          className="border rounded p-3 w-full focus:outline-none focus:ring-2 hover:bg-gray-100 focus:ring-blue-400"
           onChange={handleSubjectChange}
           defaultValue=""
         >
-          <option value="" disabled>Select a subject</option>
+          <option value="" disabled>
+            Select a subject
+          </option>
           {subjects.map((subject) => (
-            <option key={subject.id} value={subject.id}>
+            <option key={subject.id} value={subject.id} >
               {subject.name}
             </option>
           ))}
@@ -155,7 +169,9 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
             onChange={handleTeacherChange}
             defaultValue=""
           >
-            <option value="" disabled>Select a teacher</option>
+            <option value="" disabled>
+              Select a teacher
+            </option>
             {teachers.map((teacher: Teacher) => (
               <option key={teacher.id} value={teacher.id}>
                 {teacher.name}
@@ -173,7 +189,9 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
             onChange={handleClassChange}
             defaultValue=""
           >
-            <option value="" disabled>Select a class</option>
+            <option value="" disabled>
+              Select a class
+            </option>
             {classes.map((classItem) => (
               <option key={classItem.id} value={classItem.class.id}>
                 {classItem.class.name}
@@ -205,35 +223,39 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
               </tr>
             </thead>
             <tbody>
-              {students.map((student:LocalStudent, index) => {
-                const totalMarks = (student.marks[0].behavior || 0) + (student.marks[0].participation || 0) +
-                  (student.marks[0].workingQuiz || 0) + (student.marks[0].project || 0) + (student.marks[0].finalExam || 0);
+              {students.map((student: LocalStudent, index) => {
+                const totalMarks =
+                  (student.marks.find((mark) => mark.subjectId === selectedSubjectId).behavior || 0) +
+                  (student.marks.find((mark) => mark.subjectId === selectedSubjectId).participation || 0) +
+                  (student.marks.find((mark) => mark.subjectId === selectedSubjectId).workingQuiz || 0) +
+                  (student.marks.find((mark) => mark.subjectId === selectedSubjectId).project || 0) +
+                  (student.marks.find((mark) => mark.subjectId === selectedSubjectId).finalExam || 0);
 
                 return (
                   <tr key={student.id}>
-                    <td className="border p-2 text-center font-bold">{index + 1}</td>
-                    <td className="border p-2 font-bold">
-  <Link href={`/students/${student.id}/results`}>
-    {student.name}
-  </Link>
-</td>
-                    <td className="border p-2">{student.marks[0].behavior}</td>
-                    <td className="border p-2">{student.marks[0].participation}</td>
-                    <td className="border p-2">{student.marks[0].workingQuiz}</td>
-                    <td className="border p-2">{student.marks[0].project}</td>
-                    <td className="border p-2">{student.marks[0].finalExam}</td>
-                    <td className="border p-2 text-center font-bold">{totalMarks}</td>
+                    <td className="border p-2">{index + 1}</td>
+                    <td className="border p-2">
+                      <Link href={`/students/${student.id}/results`}>{student.name}</Link>
+                    </td>
+                    <td className="border p-2">{student.marks.find((mark) => mark.subjectId === selectedSubjectId).behavior}</td>
+                    <td className="border p-2">{student.marks.find((mark) => mark.subjectId === selectedSubjectId).participation}</td>
+                    <td className="border p-2">{student.marks.find((mark) => mark.subjectId === selectedSubjectId).project}</td>
+                    <td className="border p-2">{student.marks.find((mark) => mark.subjectId === selectedSubjectId).workingQuiz}</td>
+                    <td className="border p-2">{student.marks.find((mark) => mark.subjectId === selectedSubjectId).finalExam}</td>
+                    <td className="border p-2">{totalMarks}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
-          <button
-            className="mt-4 font-semibold py-2 px-4 bg-[#3a4750] rounded text-white"
-            onClick={handlePrintCertificate}
-          >
-            Print Certificate
-          </button>
+          <div className="mt-2 flex justify-end print:hidden">
+            <button
+              className="py-2 px-4 bg-main text-white rounded"
+              onClick={handlePrintCertificate}
+            >
+              Print Certificate
+            </button>
+          </div>
         </div>
       )}
     </div>
