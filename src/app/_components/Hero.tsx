@@ -15,21 +15,23 @@ const Hero = () => {
   return (
 
 
-<section className=" bg-[url('/hero.jpg')] bg-cover w-full flex items-center flex-col   h-screen justify-between pt-12 relative">
-  <div className="mx-auto w-full relative px-4 pt-16  lg:flex  lg:items-center">
-    <div className='absolute left-0 p-4 flex items-center flex-col justify-center top-0 font-bold text-main shadow-lg    rounded-lg shadow-main'>
+<section className=" bg-[url('/hero.jpg')] bg-cover w-full flex items-center flex-col   h-screen justify-between pt-4 relative">
+  <div className="mx-auto w-full relative px-4   flex  items-center flex-col">
+    
+   <div className='w-full flex items-center justify-between flex-wrap '>
+   <div className='  p-4 flex items-center flex-col justify-center  font-bold text-main shadow-lg w-full md:w-fit   rounded-lg shadow-main'>
 <h1 className='text-lg '>1st Trimester Data Entry</h1>
 <h6 className='text-sm'>Available Till : <span className='text-red-700'>05/11/2024</span></h6>
     </div>
-    <div className='absolute right-0 p-4 flex items-center flex-col justify-center top-0 font-semibold text-red-700  '>
+    <div className=' p-4 flex items-center  w-full md:w-fit flex-col justify-center top-0 font-semibold text-red-700  '>
       <span className='text-main font-semibold text-lg'>Time Remaining :</span>
     <Countdown targetDate={targetDate} />
     </div>
-   
-    <div className="mx-auto  py-24 text-center  self-center ">
-      <h1 className="text-4xl font-extrabold  text-black min-w-fit ">
+   </div>
+    <div className="mx-auto   py-24 text-center  self-center ">
+      <h1 className="md:text-4xl text-xl font-extrabold  text-main min-w-fit ">
      Welcome To The School Control System.
-        <strong className="font-bold text-main sm:block mt-8"> Alforqan Private School. </strong>
+        <strong className="font-bold text-red-700 sm:block mt-8"> Alforqan Private School. </strong>
       </h1>
 
       

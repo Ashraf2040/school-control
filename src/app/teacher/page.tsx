@@ -178,7 +178,7 @@ const TeacherPage: React.FC = () => {
   return (
     <div className="mx-auto p-6 min-h-screen">
       <Toaster position="top-right" />
-      <h1 className="text-xl font-bold text-white bg-[#0e2e3b] p-3 rounded-xl mb-6 max-w-fit text-center">
+      <h1 className="md:text-xl font-bold text-white bg-main p-3 rounded-xl mb-6 max-w-fit text-center">
         Hello, {currentTeacher?.name}
       </h1>
 

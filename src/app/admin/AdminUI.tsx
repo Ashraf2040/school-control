@@ -131,7 +131,7 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
 
   return (
     <div className="w-full mx-auto p-6 bg-white rounded-lg shadow-lg">
-      <div className='flex justify-between items-center mb-3 flex-wrap print:hidden'>
+      <div className='flex justify-between items-center mb-3 flex-wrap print:hidden gap-2'>
       <h1  className="text-white max-w-fit bg-main text-center rounded px-4 py-2 font-semibold">Admin Dashboard
       </h1>
       <button
