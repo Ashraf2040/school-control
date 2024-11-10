@@ -202,9 +202,9 @@ const TeacherPage: React.FC = () => {
       </div>
 
       {students.length > 0 && (
-        <div>
+        <div className='overflow-x-scroll '>
           <h2 className="text-2xl text-lamaPurple font-semibold mb-4">Students in Class</h2>
-          <table className="min-w-full bg-white shadow-lg rounded-lg overflow-hidden border border-lamaYellowLight">
+          <table className="min-w-full bg-white shadow-lg rounded-lg border ">
             <thead className="bg-gray-200">
               <tr>
                 <th className="p-3 text-center text-black">NO</th>

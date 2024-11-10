@@ -202,14 +202,14 @@ const AdminUI: React.FC<AdminUIProps> = ({ subjects }) => {
       )}
 
       {students.length > 0 && (
-        <div id="certificate" className="p-2 border border-gray-300 rounded-lg">
+        <div id="certificate" className="p-2 border border-gray-300 rounded-lg overflow-scroll">
           <div className="bg-gray-200 p-4 grid grid-cols-3">
             <p className="text-lg ">Teacher: {selectedTeacherEmail}</p>
             <p className="text-lg ">Class: {selectedClassName}</p>
             <p className="text-lg ">Signature :</p>
           </div>
 
-          <table className="min-w-full border-collapse border border-gray-200 text-sm">
+          <table className="min-w-full border-collapse border border-gray-200 text-sm ">
             <thead className="bg-gray-200">
               <tr>
                 <th className="border p-2">No</th>
