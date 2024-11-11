@@ -14,7 +14,7 @@ const Header = () => {
             <div className='    text-end items-center'>
               <SignedOut>
                 <SignInButton >
-                  <button className="  right-0 text-xs font-bold text-main bg-second p-1 md:px-2 rounded md:text-lg">Sign In</button>
+                  <button className="  right-0 text-xs font-bold text-red-500 bg-second p-1 md:px-2 rounded md:text-lg ">LogIn</button>
                 </SignInButton>
               </SignedOut>
               <SignedIn>
